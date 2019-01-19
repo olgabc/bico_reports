@@ -34,7 +34,7 @@ def replace_html_text(html_path):
 
     filedata = filedata.replace(
         r'<th style="width:150px; ">Контракт</th>',
-        r'<th style="width:150px; ">Контракт</th><th style="width:150px; ">Ссылка на Заказчика</th><th style="width:150px; ">Ссылка на Поставщика</th><th style="width:150px; ">Ссылка на Участников</th>'
+        r'<th style="width:150px; ">Контракт</th><th style="width:150px; ">Ссылка на заказчика</th><th style="width:150px; ">Ссылка на поставщика</th><th style="width:150px; ">Ссылки на участников</th>'
     )
     filedata = filedata.replace(
         r'<th style="width:150px; ">20</th>',
@@ -44,7 +44,7 @@ def replace_html_text(html_path):
     table_rows = re.findall(r'<tr(.+?)</tr>+?', filedata)
 
     for row in table_rows:
-        print("row", row)
+
         new_row = row
         row_cells = re.findall(r'<td(.+?)</td>+?', row)
         len_row = len(row_cells)
@@ -57,6 +57,12 @@ def replace_html_text(html_path):
         elif len_row == 4:
             cols = [0]
 
+        rowspan = 1
+        rowspans = re.findall(r'style="width:70px; "rowspan="(.+?)"+?', row)
+
+        if rowspans:
+            rowspan = rowspans[0]
+
         for col_num in cols:
             link = ""
             try:
@@ -64,12 +70,18 @@ def replace_html_text(html_path):
                 link = r'https://www.bicotender.ru/crm/company/details/company_id/{}/?submit=1'.format(
                     link
                 )
-                print(col_num, "link", link)
+                print(rowspan, col_num, "link", link)
 
             except IndexError:
                 print(col_num, "WWW_link", link)
 
-            new_row += r'<td style="width:150px; "rowspan="1" class="text-align-right" data-order-value="{0}">{0}</td>'.format(link)
+            if col_num == 17:
+                rowspan = 1
+
+            new_row += r'<td style="width:150px; "rowspan="{0}" class="text-align-right" data-order-value="{1}">{1}</td>'.format(
+                rowspan,
+                link
+            )
 
         filedata = filedata.replace(row, new_row)
 
