@@ -1,5 +1,16 @@
-1. parse tenders names / rename and remove downloads (names) (lots names if...)
-2. join downloads with/without hyperlinks
-3. clean tenders and lots names
-4. choose tenders by names
+OLD:
+1. download search_results in folders (by hands)
+2. rename and remove downloads
+3. get hyperlinks from downloads
+4. concat downloads with hyperlinks_adresses as text
+5. clean tenders and lots names
+6. mark duplicates
+7. choose tenders by names
+8. write xls with hyperlinks
 
+NEW:
+1. parse search results with hyperlinks_adresses text
+2. clean tenders and lots names
+3. mark duplicates
+4. choose tenders by names
+5. write xls with hyperlinks

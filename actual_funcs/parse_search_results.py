@@ -3,7 +3,7 @@ from libs.db_libs.write import write_some_xlsx
 import requests
 import re
 import os
-from config.config import DATA_PARAM
+from config.config import DATA_PARAM, project_folder
 
 
 my_link = """
@@ -25,7 +25,7 @@ def download_html(link_example, results_qty, on_page=500, folder="html_downloads
     for page_num in page_nums:
         page_link = generate_link(link=link_example, page_num=page_num, on_page=on_page)
         p = requests.post(page_link, headers={'Content-Type': 'application/x-www-form-urlencoded'}, data=DATA_PARAM)
-        page_path = os.path.join(folder, "{}.html".format(page_num))
+        page_path = os.path.join(project_folder, folder, "{}.html".format(page_num))
 
         with open(page_path, 'w', encoding='utf-8') as file:
             file.write(p.text)
@@ -83,35 +83,64 @@ def get_replaced_html_text(html_path):
     return filedata
 
 
-def parse_html_tables_from_folder(folder, no_participants=True):
-    html_files = [os.path.join(folder, html_file) for html_file in os.listdir(folder) if ".html" in html_file]
+
+
+def parse_html_tables_from_folder(folder):
+    html_files = [
+        os.path.join(
+            project_folder,
+            folder,
+            html_file
+        ) for html_file in os.listdir(
+            os.path.join(
+            project_folder,
+            folder
+            )
+        ) if ".html" in html_file
+    ]
+
     tables = []
 
     for html_file in html_files:
         tables.append(pd.read_html(get_replaced_html_text(html_file))[3])
 
     concat_tables = pd.concat(tables, ignore_index=True)
-    cols = [col[0] for col in concat_tables.columns]
-
-    if no_participants:
-        concat_tables.dropna(thresh=7, inplace=True)
-        concat_tables.drop(cols[23:], axis=1, inplace=True)
-        concat_tables.drop(cols[17:20], axis=1, inplace=True)
-
-    concat_tables.drop(["#", "Названия позиций"], axis=1, inplace=True)
-    index = range(1, len(concat_tables) + 1)
-    concat_tables.index = index
-    concat_tables.index.names = ["#"]
-
-    float_cols = ["Сумма НМЦК", "Предложенная цена", "Снижение, %"]
-
-    for float_col in float_cols:
-        concat_tables[float_col] = concat_tables[float_col].replace(regex=r'[\s.]|(RUR)', value="")
-
     return concat_tables
 
 
-download_html(my_link, results_qty=10)
-xls = parse_html_tables_from_folder("html_downloads")
+def delete_trash_from_parsed_tables(dataframe, no_participants=True):
+
+    if no_participants:
+        dataframe.dropna(thresh=7, inplace=True)
+        dataframe.drop(dataframe.columns[23:], axis=1, inplace=True)
+        dataframe.drop(dataframe.columns[17:20], axis=1, inplace=True)
+
+    dataframe.drop(["#", "Названия позиций", "Контракт"], axis=1, inplace=True)
+    dataframe.drop(dataframe[dataframe['Номер тендера'] == 1].index, inplace=True)
+    index = range(1, len(dataframe) + 1)
+    dataframe.index = index
+    dataframe.index.names = ["#"]
+    float_cols = ["Сумма НМЦК", "Предложенная цена", "Снижение, %"]
+
+    for float_col in float_cols:
+        dataframe[float_col] = dataframe[float_col].replace(regex=r'[\s]|(RUR)', value="")
+        dataframe[float_col] = dataframe[float_col].replace(regex=r'\.', value=",")
+
+    #dataframe["Робот"] = dataframe["Источник"]
+    #dataframe["Робот"] = dataframe["Робот"].str.replace(pat=r'robot(\d+)', repl='\2')
+    #dataframe["Источник"] = concat_tables["Источник"].replace(regex=r'http(.?)\(Тендер\)', value="")
+    #dataframe["Источник"] = concat_tables["Источник"].replace(regex=r'robot(.*)', value="")
+    return dataframe
+
+"""
+download_html(my_link, results_qty=3200)
+xls_with_trash = parse_html_tables_from_folder("html_downloads")
+write_some_xlsx(xls_with_trash, os.path.join(project_folder, "html_table_with_trash.xlsx"), index=True)
+"""
+
+from libs.db_libs.load import load_some_xlsx
+df_with_trash = load_some_xlsx("html_table_with_trash.xlsx", folder="")
+print(df_with_trash)
+xls = delete_trash_from_parsed_tables(df_with_trash)
 print(xls)
-write_some_xlsx(xls, "html_table.xlsx", index=True)
+write_some_xlsx(xls, os.path.join(project_folder, "html_table.xlsx"), index=True)
