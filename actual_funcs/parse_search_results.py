@@ -1,14 +1,8 @@
 import pandas as pd
-from libs.db_libs.write import write_some_xlsx
 import requests
 import re
 import os
 from config.config import DATA_PARAM, project_folder
-
-
-my_link = """
-https://www.bicotender.ru/crm/analytics/list/?region_id[0]=2774&multiregions=0&field_id[0]=1070&multifields=0&search_by_lots=1&search_by_positions=1&earlierDate[from]=2018-01-01&earlierDate[to]=2018-12-31&finalCost[from]=1&status_id[0]=4&status_id[1]=5&status_id[2]=6&status_id[3]=7&caption=%D0%97%D0%B0%D0%BA%D1%83%D0%BF%D0%BA%D0%B8%20%D0%B2%20%D0%B2%D0%B0%D1%88%D0%B5%D0%BC%20%D1%80%D0%B5%D0%B3%D0%B8%D0%BE%D0%BD%D0%B5&atype=field_1&showConf[asLot]=2&showConf[competitorFilterMode]=2&submit=1
-"""
 
 
 def generate_link(link, page_num=1, on_page=500):
@@ -55,12 +49,24 @@ def get_replaced_html_text(html_path):
     for row in table_rows:
 
         new_row = row
+        long_row = row
         row_cells = re.findall(r'<td(.+?)</td>+?', row)
         len_row = len(row_cells)
 
         cols = []
 
         if len_row == 21:
+
+            cell_text = re.search("' target='_blank'>(.*)(?=</b)", row_cells[3])
+            tooltip_text = re.search(r'Tooltip" title="(.*)(?=<a href)', row_cells[3])
+
+            if cell_text and tooltip_text:
+                long_row = row.replace(
+                cell_text[0].replace("' target='_blank'>", ''),
+                tooltip_text[0].replace('Tooltip" title="', '')
+                )
+
+
             cols = [14, 15, 17]
 
         for col_num in cols:
@@ -79,10 +85,9 @@ def get_replaced_html_text(html_path):
             )
 
         filedata = filedata.replace(row, new_row)
+        filedata = filedata.replace(row, long_row)
 
     return filedata
-
-
 
 
 def parse_html_tables_from_folder(folder):
@@ -108,6 +113,19 @@ def parse_html_tables_from_folder(folder):
     return concat_tables
 
 
+def set_robot_id(source):
+    robot = re.search(r'robot(\d+)', source)[0]
+    links = source.replace(robot, "")
+    many_links = re.search(r'(.+)(?=http)', links)
+
+    if many_links:
+        link = many_links[0]
+    else:
+        link = links
+
+    return {"link": link, "robot": robot.replace("robot", "")}
+
+
 def delete_trash_from_parsed_tables(dataframe, no_participants=True):
 
     if no_participants:
@@ -126,21 +144,8 @@ def delete_trash_from_parsed_tables(dataframe, no_participants=True):
         dataframe[float_col] = dataframe[float_col].replace(regex=r'[\s]|(RUR)', value="")
         dataframe[float_col] = dataframe[float_col].replace(regex=r'\.', value=",")
 
-    #dataframe["Робот"] = dataframe["Источник"]
-    #dataframe["Робот"] = dataframe["Робот"].str.replace(pat=r'robot(\d+)', repl='\2')
-    #dataframe["Источник"] = concat_tables["Источник"].replace(regex=r'http(.?)\(Тендер\)', value="")
-    #dataframe["Источник"] = concat_tables["Источник"].replace(regex=r'robot(.*)', value="")
+    dataframe["Робот"] = dataframe["Источник"].apply(lambda x: set_robot_id(x)["robot"])
+    dataframe["Источник"] = dataframe["Источник"].apply(lambda x: set_robot_id(x)["link"])
+
+    dataframe = dataframe.rename(index=str, columns={"Сумма НМЦК": "Сумма НЦК"})
     return dataframe
-
-"""
-download_html(my_link, results_qty=3200)
-xls_with_trash = parse_html_tables_from_folder("html_downloads")
-write_some_xlsx(xls_with_trash, os.path.join(project_folder, "html_table_with_trash.xlsx"), index=True)
-"""
-
-from libs.db_libs.load import load_some_xlsx
-df_with_trash = load_some_xlsx("html_table_with_trash.xlsx", folder="")
-print(df_with_trash)
-xls = delete_trash_from_parsed_tables(df_with_trash)
-print(xls)
-write_some_xlsx(xls, os.path.join(project_folder, "html_table.xlsx"), index=True)
