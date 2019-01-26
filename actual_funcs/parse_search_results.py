@@ -113,7 +113,7 @@ def parse_html_tables_from_folder(folder):
     return concat_tables
 
 
-def set_robot_id(source):
+def set_link_and_robot_id(source):
     robot = re.search(r'robot(\d+)', source)[0]
     links = source.replace(robot, "")
     many_links = re.search(r'(.+)(?=http)', links)
@@ -126,7 +126,7 @@ def set_robot_id(source):
     return {"link": link, "robot": robot.replace("robot", "")}
 
 
-def delete_trash_from_parsed_tables(dataframe, no_participants=True):
+def beatify_parsed_tables(dataframe, no_participants=True):
 
     if no_participants:
         dataframe.dropna(thresh=7, inplace=True)
@@ -144,8 +144,12 @@ def delete_trash_from_parsed_tables(dataframe, no_participants=True):
         dataframe[float_col] = dataframe[float_col].replace(regex=r'[\s]|(RUR)', value="")
         dataframe[float_col] = dataframe[float_col].replace(regex=r'\.', value=",")
 
-    dataframe["Робот"] = dataframe["Источник"].apply(lambda x: set_robot_id(x)["robot"])
-    dataframe["Источник"] = dataframe["Источник"].apply(lambda x: set_robot_id(x)["link"])
+    dataframe["Название тендера и лота"] = dataframe["Название тендера и лота"].replace(regex=r'>', value="")
+
+    dataframe["Робот"] = dataframe["Источник"].apply(lambda x: set_link_and_robot_id(x)["robot"])
+    dataframe["Источник"] = dataframe["Источник"].apply(lambda x: set_link_and_robot_id(x)["link"])
 
     dataframe = dataframe.rename(index=str, columns={"Сумма НМЦК": "Сумма НЦК"})
+    dataframe["Название тендера и лота"] = dataframe["Название тендера и лота"].str.capitalize()
+
     return dataframe
