@@ -15,5 +15,5 @@ clean tender's and lot's names
             repl=r,
             case=False
         )
-
+    dataframe["Название тендера и лота"] = dataframe["Название тендера и лота"].str.capitalize()
     return dataframe

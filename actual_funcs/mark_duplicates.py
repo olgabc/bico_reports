@@ -1,25 +1,51 @@
-def title_cost(x,y):
-    if x:
-        if y in [2000, 5000, 5100]:
+from pandas import merge as pd_merge
+from math import isnan
+
+
+def duplicates_have_different_sources(x):
+    return x['min'] != x['max']
+
+
+def original_or_copy(x):
+    if isnan(x['duplicates_have_different_sources']):
+        return
+
+    else:
+        if x['Робот'] in ["2000", "5000", "5100"]:
             return "original"
         else:
             return "copy"
-    else:
-        return x
-
-
-def wrapper(x):
-    return title_cost(x['duplicates'], x['Робот'])
 
 
 def mark_duplicates(dataframe):
-    dataframe["Название тендера и лота"] = dataframe["Название тендера и лота"].str.capitalize()
-    dataframe["duplicates"] = dataframe.duplicated(
+
+    dataframe["is_duplicate"] = dataframe.duplicated(
         subset=["Название тендера и лота", "Опубликован", "Сумма НЦК"],
         keep=False
     )
-    dataframe_duplicates = dataframe[dataframe["duplicates"]]
-    dataframe_duplicates["duplicates"] = dataframe_duplicates["Робот"].apply()
-    dataframe["duplicates"] = dataframe[["duplicates", "Робот"]].apply(wrapper, axis=1)
-    print(dataframe_duplicates["duplicates"])
+    dataframe_duplicates = dataframe.loc[
+        dataframe["is_duplicate"],
+        ["Название тендера и лота", "Опубликован", "Сумма НЦК", "Робот"]
+    ]
+
+    gb = dataframe_duplicates.groupby(
+        ["Название тендера и лота", "Опубликован", "Сумма НЦК"],
+    ).aggregate(min)
+
+    gb = gb.rename(index=str, columns={"Робот": "min"})
+    gb["max"] = dataframe_duplicates.groupby(["Название тендера и лота", "Опубликован", "Сумма НЦК"])['Робот'].max()
+    gb["duplicates_have_different_sources"] = gb.apply(duplicates_have_different_sources, axis=1)
+    gb = gb[gb["duplicates_have_different_sources"]]
+    gb = gb.reset_index()
+    dataframe = pd_merge(
+        dataframe,
+        gb,
+        on=["Название тендера и лота", "Опубликован", "Сумма НЦК"],
+        how='left'
+    )
+    dataframe["original_or_copy"] = dataframe.apply(
+        original_or_copy,
+        axis=1
+    )
+    dataframe.drop
     return dataframe

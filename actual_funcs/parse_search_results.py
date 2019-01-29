@@ -62,10 +62,9 @@ def get_replaced_html_text(html_path):
 
             if cell_text and tooltip_text:
                 long_row = row.replace(
-                cell_text[0].replace("' target='_blank'>", ''),
-                tooltip_text[0].replace('Tooltip" title="', '')
+                    cell_text[0].replace("' target='_blank'>", ''),
+                    tooltip_text[0].replace('Tooltip" title="', '')
                 )
-
 
             cols = [14, 15, 17]
 
@@ -98,8 +97,8 @@ def parse_html_tables_from_folder(folder):
             html_file
         ) for html_file in os.listdir(
             os.path.join(
-            project_folder,
-            folder
+                project_folder,
+                folder
             )
         ) if ".html" in html_file
     ]
@@ -110,6 +109,7 @@ def parse_html_tables_from_folder(folder):
         tables.append(pd.read_html(get_replaced_html_text(html_file))[3])
 
     concat_tables = pd.concat(tables, ignore_index=True)
+    concat_tables.columns = concat_tables.columns.droplevel(1)
     return concat_tables
 
 
@@ -134,7 +134,7 @@ def beatify_parsed_tables(dataframe, no_participants=True):
         dataframe.drop(dataframe.columns[17:20], axis=1, inplace=True)
 
     dataframe.drop(["#", "Названия позиций", "Контракт"], axis=1, inplace=True)
-    dataframe.drop(dataframe[dataframe['Номер тендера'] == 1].index, inplace=True)
+    #dataframe.drop(dataframe[dataframe['Номер тендера'] == 1].index, inplace=True)
     index = range(1, len(dataframe) + 1)
     dataframe.index = index
     dataframe.index.names = ["#"]
