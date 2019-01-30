@@ -47,5 +47,5 @@ def mark_duplicates(dataframe):
         original_or_copy,
         axis=1
     )
-    dataframe.drop
+    dataframe.drop(["max", "min", "duplicates_have_different_sources"], axis=1, inplace=True)
     return dataframe

@@ -134,10 +134,11 @@ def beatify_parsed_tables(dataframe, no_participants=True):
         dataframe.drop(dataframe.columns[17:20], axis=1, inplace=True)
 
     dataframe.drop(["#", "Названия позиций", "Контракт"], axis=1, inplace=True)
-    #dataframe.drop(dataframe[dataframe['Номер тендера'] == 1].index, inplace=True)
+
     index = range(1, len(dataframe) + 1)
     dataframe.index = index
     dataframe.index.names = ["#"]
+
     float_cols = ["Сумма НМЦК", "Предложенная цена", "Снижение, %"]
 
     for float_col in float_cols:
