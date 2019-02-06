@@ -43,6 +43,9 @@ def set_hyperlinlks_in_excel_col(
     """
     max_row = len(hyperlinks_adresses) + 1
 
+    if not hyperlinks_texts:
+        hyperlinks_texts = hyperlinks_adresses
+
     if preffix:
         hyperlinks_adresses = ["{}/{}/".format(preffix, hyperlink_adress) for hyperlink_adress in hyperlinks_adresses]
 
