@@ -2,6 +2,7 @@ import os
 from string import ascii_uppercase as alphabet
 import xlsxwriter
 from config.config import project_folder
+from math import nan
 
 excel_cols = []
 
@@ -55,12 +56,13 @@ def set_hyperlinlks_in_excel_col(
 
     for xl_row, link_adress, link_text in zip(range(1, max_row), hyperlinks_adresses, hyperlinks_texts):
         print("link:", link_adress, "text:", link_text)
-        worksheet.write_url(
-            row=xl_row,
-            col=xl_col,
-            url=link_adress,
-            string=link_text,
-            tip=tip
-        )
+        if not isinstance(link_adress, float):
+            worksheet.write_url(
+                row=xl_row,
+                col=xl_col,
+                url=link_adress,
+                string=link_text,
+                tip=tip
+            )
 
     workbook.close()

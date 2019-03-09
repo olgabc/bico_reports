@@ -13,6 +13,7 @@ def generate_link(link, page_num=1, on_page=500):
 
 
 def download_html(link_example, results_qty, on_page=500, folder="html_downloads"):
+    print("downlad_html")
     pages_qty = int(results_qty / on_page) + 1
     page_nums = [i for i in range(1, pages_qty + 1)]
 
@@ -26,7 +27,7 @@ def download_html(link_example, results_qty, on_page=500, folder="html_downloads
 
 
 def get_replaced_html_text(html_path):
-
+    print("get_replaced_html_text")
     with open(html_path, 'r', encoding='utf-8') as file:
         filedata = file.read()
 
@@ -90,6 +91,7 @@ def get_replaced_html_text(html_path):
 
 
 def parse_html_tables_from_folder(folder):
+    print("parse_html_tables_from_folder")
     html_files = [
         os.path.join(
             project_folder,
@@ -106,7 +108,10 @@ def parse_html_tables_from_folder(folder):
     tables = []
 
     for html_file in html_files:
-        tables.append(pd.read_html(get_replaced_html_text(html_file))[3])
+        try:
+            tables.append(pd.read_html(get_replaced_html_text(html_file))[3])
+        except IndexError:
+            break
 
     concat_tables = pd.concat(tables, ignore_index=True)
     concat_tables.columns = concat_tables.columns.droplevel(1)
